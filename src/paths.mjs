@@ -17,7 +17,7 @@ export function paths(env = process.env) {
   return {
     home,
     app: join(home, 'app'),
-    appBin: join(home, 'app', 'bin', 'ai-adoption-score.mjs'),
+    appBin: join(home, 'app', 'bin', 'ai-coding-usage.mjs'),
     launcher: join(home, LAUNCHER_NAME),
     state: join(home, 'state.json'),
     lock: join(home, 'sync.lock'),

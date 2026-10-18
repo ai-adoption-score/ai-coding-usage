@@ -16,15 +16,15 @@ import { describeChoice, repositoryList } from './choice.mjs'
 import { formatSummary } from './summary.mjs'
 import { askChoice, syncNow, waitForChoice } from './sync.mjs'
 
-const HELP = `ai-adoption-score: shares how you use Claude Code and Codex with your company's AI Adoption Score survey.
+const HELP = `ai-coding-usage: shares how you use Claude Code and Codex with your company's AI Adoption Score survey.
 It never shares prompts, AI answers, code, file names, command text or session titles.
 
 Usage
-  ai-adoption-score connect <code> [--server <url>]
-  ai-adoption-score status
-  ai-adoption-score sync
-  ai-adoption-score disconnect
-  ai-adoption-score preview [--days 30] [--company github.com/acme] [--json]
+  ai-coding-usage connect <code> [--server <url>]
+  ai-coding-usage status
+  ai-coding-usage sync
+  ai-coding-usage disconnect
+  ai-coding-usage preview [--days 30] [--company github.com/acme] [--json]
 
   connect     Link this Mac to your survey with the code from your survey page. It adds a hook to Claude Code and
               Codex and an automatic ping-back, and sends the names of the repositories you used in the last 30 days, so
@@ -108,7 +108,7 @@ async function connect(args) {
     else if (!code) code = args[index]
     else return fail(`Unknown option "${args[index]}".`)
   }
-  if (!code) return fail('Add the code from your survey page: ai-adoption-score connect K7Q2-9M4X')
+  if (!code) return fail('Add the code from your survey page: npx @ai-adoption-score/ai-coding-usage@1 connect K7Q2-9M4X')
   try {
     new URL(server)
   } catch {

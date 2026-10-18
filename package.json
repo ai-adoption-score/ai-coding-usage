@@ -1,5 +1,5 @@
 {
-  "name": "ai-adoption-score",
+  "name": "@ai-adoption-score/ai-coding-usage",
   "version": "1.0.0",
   "description": "Shares how you use Claude Code and Codex with your company's AI Adoption Score survey. Never prompts, AI answers, code or file names.",
   "homepage": "https://ai-adoption-score.app/product/ai-coding-usage",
@@ -21,7 +21,7 @@
   ],
   "type": "module",
   "bin": {
-    "ai-adoption-score": "./bin/ai-adoption-score.mjs"
+    "ai-coding-usage": "bin/ai-coding-usage.mjs"
   },
   "files": [
     "bin",
@@ -31,5 +31,8 @@
   "engines": {
     "node": ">=18.17"
   },
-  "license": "MIT"
+  "license": "MIT",
+  "publishConfig": {
+    "access": "public"
+  }
 }

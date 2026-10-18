@@ -32,7 +32,7 @@ async function request(server, path, method, body, token) {
       method,
       headers: {
         ...(method === 'POST' ? { 'content-type': 'application/json' } : {}),
-        'user-agent': `ai-adoption-score/${CLIENT_VERSION}`,
+        'user-agent': `ai-coding-usage/${CLIENT_VERSION}`,
         ...(token ? { authorization: `Bearer ${token}` } : {}),
       },
       ...(method === 'POST' ? { body: JSON.stringify(body) } : {}),

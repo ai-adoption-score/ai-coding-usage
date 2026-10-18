@@ -1,11 +1,11 @@
-# ai-adoption-score
+# @ai-adoption-score/ai-coding-usage
 
 The add-on behind [AI Coding Usage](https://ai-adoption-score.app/product/ai-coding-usage), a survey in AI Adoption
 Score. It counts how a person uses Claude Code and Codex on their Mac and, once connected, shares the numbers with their
 company's survey. Prompts, the AI's answers, code, file names, command text and session titles never leave the Mac.
 
-You don't install it yourself: your survey page shows one line with a code, `npx ai-adoption-score@1 connect <code>`, to
-paste into Claude Code, Codex or Terminal.
+You don't install it yourself: your survey page shows one line with a code,
+`npx @ai-adoption-score/ai-coding-usage@1 connect <code>`, to paste into Claude Code, Codex or Terminal.
 
 Connected once, it shares by itself: a hook in Claude Code and Codex syncs after a session's replies, at most every 5
 minutes and always when a session ends, and an automatic ping-back, once an hour and without any numbers, tells the
@@ -65,7 +65,7 @@ alone. `AI_ADOPTION_SCORE_NODE` names a Node for `run.sh` to try.
 Count this Mac's last 30 days and see what would be shared, without connecting and without sending anything:
 
 ```bash
-npx ai-adoption-score@1 preview
+npx @ai-adoption-score/ai-coding-usage@1 preview
 ```
 
 Add `--json` to see the exact rows, or `--days 7` for a shorter window. It needs Node.js 18.17 or newer and git, and
@@ -104,7 +104,7 @@ again and ticks it. Work outside any repository is one more box.
 One row per session, day, repository and branch: the tool, a hash of the session id, the day and the first and last
 moment, the repository and branch and whether the branch is pushed, active minutes, prompts, stops, rejected actions,
 commands, file edits, lines added and removed, connector calls by name, skills, helper agents, commits and pushed
-commits, and per model its replies and tokens. `npx ai-adoption-score@1 preview --json` prints the exact rows this Mac
+commits, and per model its replies and tokens. `npx @ai-adoption-score/ai-coding-usage@1 preview --json` prints the exact rows this Mac
 would send.
 
 Never shared: prompts, AI answers, code, file names and paths, command text, session titles.
