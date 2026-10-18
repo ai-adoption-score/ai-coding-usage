@@ -1,0 +1,35 @@
+{
+  "name": "ai-adoption-score",
+  "version": "1.0.0",
+  "description": "Shares how you use Claude Code and Codex with your company's AI Adoption Score survey. Never prompts, AI answers, code or file names.",
+  "homepage": "https://ai-adoption-score.app/product/ai-coding-usage",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ai-adoption-score/ai-coding-usage.git"
+  },
+  "bugs": {
+    "url": "https://github.com/ai-adoption-score/ai-coding-usage/issues",
+    "email": "support@ai-adoption-score.app"
+  },
+  "author": "AI Adoption Score <support@ai-adoption-score.app> (https://ai-adoption-score.app)",
+  "keywords": [
+    "ai-adoption-score",
+    "claude-code",
+    "codex",
+    "ai-coding",
+    "usage"
+  ],
+  "type": "module",
+  "bin": {
+    "ai-adoption-score": "./bin/ai-adoption-score.mjs"
+  },
+  "files": [
+    "bin",
+    "src",
+    "README.md"
+  ],
+  "engines": {
+    "node": ">=18.17"
+  },
+  "license": "MIT"
+}
