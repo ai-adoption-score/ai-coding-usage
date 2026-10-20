@@ -4,13 +4,13 @@ import { existsSync, rmSync } from 'node:fs'
 import { homedir } from 'node:os'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { CLIENT_VERSION, post } from './api.mjs'
+import { CLIENT_VERSION, post, serverProblem } from './api.mjs'
 import { runCheckIn } from './checkin.mjs'
 import { DEFAULT_SERVER, readConfig, writeConfig } from './config.mjs'
 import { runHook } from './hook.mjs'
 import { hookState, installAll, uninstallAll } from './install.mjs'
 import { paths } from './paths.mjs'
-import { scanUsage } from './scan.mjs'
+import { daysToRead, scanUsage } from './scan.mjs'
 import { readState } from './state.mjs'
 import { describeChoice, repositoryList } from './choice.mjs'
 import { formatSummary } from './summary.mjs'
@@ -109,11 +109,8 @@ async function connect(args) {
     else return fail(`Unknown option "${args[index]}".`)
   }
   if (!code) return fail('Add the code from your survey page: npx @ai-adoption-score/ai-coding-usage@1 connect K7Q2-9M4X')
-  try {
-    new URL(server)
-  } catch {
-    return fail(`"${server}" isn't a web address.`)
-  }
+  const problem = serverProblem(server)
+  if (problem) return fail(problem)
   // Run again on a Mac that is connected: the same server carries the link on with the new token, so it doesn't
   // count a second Mac. A token never goes to another server; that survey is told the Mac left once this one connects.
   const previous = readConfig()
@@ -131,7 +128,9 @@ async function connect(args) {
   if (response.status !== 200 || response.body?.status !== 'connected') {
     return fail(response.body?.error ?? `Couldn't connect: the server answered ${response.status}.`)
   }
-  const { token, companyName, syncIntervalSeconds, historyDays } = response.body
+  const { token, companyName, syncIntervalSeconds } = response.body
+  // However far back the survey asks for, the add-on reads 30 days at most.
+  const historyDays = daysToRead(response.body.historyDays)
   // A new connection starts with nothing sent.
   rmSync(paths().state, { force: true })
   const config = { server, token, companyName, connectedAt: new Date().toISOString(), syncIntervalSeconds, historyDays }
@@ -149,7 +148,7 @@ async function connect(args) {
   say(`  Codex: ${HOOK_WORDS[installed.codex] ?? installed.codex}`)
   say(`  Automatic ping-back: ${installed.checkIn === 'added' ? 'added, so the survey knows this Mac is still connected (no numbers)' : "couldn't add it"}`)
   // The person chooses which repositories to share before any session leaves this Mac: only the names go now.
-  const scan = await scanUsage({ days: historyDays || 30 })
+  const scan = await scanUsage({ days: historyDays })
   const list = repositoryList(scan.rows)
   const listed = await post(server, '/api/usage/repositories', list, token)
   if (listed.body?.status !== 'choosing') {

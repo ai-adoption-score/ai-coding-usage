@@ -11,15 +11,45 @@ Connected once, it shares by itself: a hook in Claude Code and Codex syncs after
 minutes and always when a session ends, and an automatic ping-back, once an hour and without any numbers, tells the
 report "no AI use today" from "no signal".
 
+## How it works, step by step
+
+In short: connect, choose on the survey page, then share. Before the choice, only repository names leave the Mac.
+
+1. **The person pastes the line from their survey page** into Claude Code, Codex or Terminal. The code in it works
+   once, for 30 minutes; the server trades it for a token for this Mac.
+2. **The add-on puts its hooks and the ping-back in place** and copies itself to `~/.ai-adoption-score`. Why: the
+   survey gets the numbers after every session without anyone running a command again, and a hook can't run from
+   npx's temporary folder. The ping-back carries no numbers; it lets the report tell "no AI use today" from "no signal".
+3. **It sends the names of the repositories used in the last 30 days, and nothing else.** Why: the person chooses on
+   their survey page, and the page needs the names to list them. The choice isn't asked in the terminal, because the
+   line usually runs inside Claude Code or Codex, where the add-on can't ask questions. The server keeps the list for
+   an hour at most.
+4. **The person ticks what to share** on their survey page; everything is ticked to start with. When they press
+   Share, the list is deleted, and with it the names they didn't tick.
+5. **Only then do numbers leave the Mac:** the last 30 days of what they ticked, then the new numbers after each
+   session. Before every sync the add-on asks what they chose and keeps everything else on the Mac; the server checks
+   the same rule again.
+6. **It removes itself** when the Mac is disconnected on the survey page or the survey closes. `disconnect` does the
+   same from the Mac.
+
+The person makes their choice on the survey page, so the survey's server keeps it and the add-on follows the server's
+answer. It still checks what it's told:
+
+- It reads 30 days back at most, whatever the server asks for.
+- It shares nothing when the choice isn't one of the two kinds the server keeps: what the person ticked, or
+  `{ "all": true }` for links made before people could choose.
+- It sends the token over https only. Plain http works only for this Mac's own address (`localhost`), for testing.
+
 ## Commands
 
 - `connect <code> [--server <url>]`: links this Mac to the survey with the code from the survey page and puts the
   hooks and the ping-back in place. Then it sends the names of the repositories used in the last 30 days, and nothing
   else, so the person can choose on their survey page which to share; a background wait shares the last 30 days of
   those once they press Share. The server defaults to `https://app.ai-adoption-score.app`;
-  `AI_ADOPTION_SCORE_SERVER` or `--server http://localhost:3000` point it at a local app. Run again on a Mac that is
-  connected, it keeps that Mac's link on the same server (the survey page still shows one Mac) and lets the person
-  choose again; a link on another server is disconnected, and its token never goes to the new one.
+  `AI_ADOPTION_SCORE_SERVER` or `--server http://localhost:3000` point it at a local app; any other server has to be
+  https. Run again on a Mac that is connected, it keeps that Mac's link on the same server (the survey page still
+  shows one Mac) and lets the person choose again; a link on another server is disconnected, and its token never goes
+  to the new one.
 - `sync`: shares now instead of after the next session. It counts the window again and sends the rows that changed
   since the server last accepted them; the server replaces what it had, so nothing counts twice.
 - `status`: which survey this Mac shares with, what the person chose, the hooks and when they last ran, and when it

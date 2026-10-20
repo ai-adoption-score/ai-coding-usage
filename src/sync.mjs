@@ -4,7 +4,7 @@ import { closeSync, openSync, readFileSync, rmSync, writeSync } from 'node:fs'
 import { constants, setPriority } from 'node:os'
 import { get, post, CLIENT_VERSION } from './api.mjs'
 import { reportedHookState } from './checkin.mjs'
-import { isShared } from './choice.mjs'
+import { isShared, readChoice } from './choice.mjs'
 import { isCurrentConfig, writeConfig } from './config.mjs'
 import { hookState, uninstallAll } from './install.mjs'
 import { log } from './log.mjs'
@@ -96,7 +96,7 @@ export async function askChoice(config) {
   if (response.status === 429) return { status: 'waiting', choice: null, retryAfterSeconds: response.retryAfterSeconds }
   const status = response.body?.status ?? (response.status === 401 ? 'revoked' : 'error')
   if (status === 'error') throw new Error(response.body?.error ?? `The server answered ${response.status}.`)
-  return { status, choice: response.body?.choice ?? null, retryAfterSeconds: null }
+  return { status, choice: readChoice(response.body?.choice), retryAfterSeconds: null }
 }
 
 /**
@@ -136,7 +136,7 @@ export async function syncNow(config, { background = false, reason = 'manual', e
     }
     const { choice } = asked
 
-    const scan = await scanUsage({ days: config.historyDays || 30, env })
+    const scan = await scanUsage({ days: config.historyDays, env })
     const included = scan.rows.filter((row) => sendsTool(row.tool, config, state, env) && isShared(choice, row.repository))
     const changed = included.filter((row) => state.sent[rowKey(row)] !== rowHash(row))
     const checkIn = {

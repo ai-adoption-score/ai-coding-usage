@@ -20,12 +20,32 @@ export function repositoryOwner(repository) {
 }
 
 /**
+ * The choice in the server's answer, taken only in one of the two shapes the server keeps: what the person ticked, or
+ * `{ all: true }` for links made before people could choose. Anything else shares nothing.
+ * @param {unknown} value @returns {RepositoryChoice | null}
+ */
+export function readChoice(value) {
+  if (!value || typeof value !== 'object') return null
+  const choice = /** @type {Record<string, unknown>} */ (value)
+  if ('all' in choice) return choice.all === true ? { all: true } : null
+  const names = (list) => Array.isArray(list) && list.every((name) => typeof name === 'string')
+  if (!names(choice.repositories) || !names(choice.owners)) return null
+  if (typeof choice.outsideGit !== 'boolean' || typeof choice.localFolders !== 'boolean') return null
+  return {
+    repositories: /** @type {string[]} */ (choice.repositories),
+    owners: /** @type {string[]} */ (choice.owners),
+    outsideGit: choice.outsideGit,
+    localFolders: choice.localFolders,
+  }
+}
+
+/**
  * Whether a session in `repository` (null outside any repository) is shared. Nothing is, before the person chooses.
  * @param {RepositoryChoice | null} choice @param {string | null} repository
  */
 export function isShared(choice, repository) {
   if (!choice) return false
-  if ('all' in choice) return true
+  if ('all' in choice) return choice.all === true
   if (!repository) return choice.outsideGit
   if (choice.repositories.includes(repository)) return true
   if (repository.startsWith(LOCAL_PREFIX)) return choice.localFolders
@@ -64,7 +84,7 @@ export function repositoryList(rows) {
 /** What this Mac shares, in a line for `status`. @param {RepositoryChoice | null} choice */
 export function describeChoice(choice) {
   if (!choice) return 'nothing yet: choose your repositories on your survey page'
-  if ('all' in choice) return 'every repository'
+  if ('all' in choice) return choice.all === true ? 'every repository' : 'nothing'
   const parts = [`${choice.repositories.length} ${choice.repositories.length === 1 ? 'repository' : 'repositories'}`]
   if (choice.owners.length > 0) parts.push(`new ones from ${choice.owners.join(', ')}`)
   if (choice.outsideGit) parts.push('work outside a repository')
