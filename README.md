@@ -5,11 +5,12 @@ Score. It counts how a person uses Claude Code and Codex on their Mac and, once 
 company's survey. Prompts, the AI's answers, code, file names, command text and session titles never leave the Mac.
 
 You don't install it yourself: your survey page shows one line with a code,
-`npx @ai-adoption-score/ai-coding-usage@1 connect <code>`, to paste into Claude Code, Codex or Terminal.
+`npx @ai-adoption-score/ai-coding-usage@latest connect <code>`, to paste into Claude Code, Codex or Terminal.
 
 Connected once, it shares by itself: a hook in Claude Code and Codex syncs after a session's replies, at most every 5
 minutes and always when a session ends, and an automatic ping-back, once an hour and without any numbers, tells the
-report "no AI use today" from "no signal".
+report "no AI use today" from "no signal". Once a day the ping-back also looks for a newer version on npm and puts it
+in place, so nobody runs the line again to get it.
 
 ## How it works, step by step
 
@@ -29,7 +30,12 @@ In short: connect, choose on the survey page, then share. Before the choice, onl
 5. **Only then do numbers leave the Mac:** the last 30 days of what they ticked, then the new numbers after each
    session. Before every sync the add-on asks what they chose and keeps everything else on the Mac; the server checks
    the same rule again.
-6. **It removes itself** when the Mac is disconnected on the survey page or the survey closes. `disconnect` does the
+6. **It keeps itself up to date.** Once a day the ping-back asks npm for the latest version. A newer one is
+   downloaded, checked against the checksum npm lists for it, started once to see that it runs on this Mac's Node, and
+   put in place of the add-on's copy; the hooks, the ping-back and the settings stay as they are. Why: a fix or a new
+   number reaches every Mac without anyone running the line again. It never goes back to an older version, skips a
+   version npm marks as withdrawn, and keeps the copy that works when anything fails.
+7. **It removes itself** when the Mac is disconnected on the survey page or the survey closes. `disconnect` does the
    same from the Mac.
 
 The person makes their choice on the survey page, so the survey's server keeps it and the add-on follows the server's
@@ -52,8 +58,8 @@ answer. It still checks what it's told:
   to the new one.
 - `sync`: shares now instead of after the next session. It counts the window again and sends the rows that changed
   since the server last accepted them; the server replaces what it had, so nothing counts twice.
-- `status`: which survey this Mac shares with, what the person chose, the hooks and when they last ran, and when it
-  last shared.
+- `status`: which survey this Mac shares with, what the person chose, the hooks and when they last ran, when it last
+  shared, and the add-on's version and when it last looked for a newer one.
 - `disconnect`: stops sharing from this Mac and removes everything it put in place.
 - `preview [--days 30] [--company github.com/acme] [--json]`: what would be shared, without sending.
 
@@ -88,14 +94,15 @@ nothing, and `disconnect` still takes them away.
 
 For testing, `AI_ADOPTION_SCORE_HOME`, `AI_ADOPTION_SCORE_CLAUDE_SETTINGS`, `AI_ADOPTION_SCORE_CODEX_HOOKS` and
 `AI_ADOPTION_SCORE_LAUNCH_AGENTS` move each of these elsewhere, and `AI_ADOPTION_SCORE_SKIP_LAUNCHCTL=1` leaves launchd
-alone. `AI_ADOPTION_SCORE_NODE` names a Node for `run.sh` to try.
+alone. `AI_ADOPTION_SCORE_NODE` names a Node for `run.sh` to try. `AI_ADOPTION_SCORE_REGISTRY` points the daily update
+at another npm registry; like the server, it has to be https, or http on this Mac itself.
 
 ## Try it
 
 Count this Mac's last 30 days and see what would be shared, without connecting and without sending anything:
 
 ```bash
-npx @ai-adoption-score/ai-coding-usage@1 preview
+npx @ai-adoption-score/ai-coding-usage@latest preview
 ```
 
 Add `--json` to see the exact rows, or `--days 7` for a shorter window. It needs Node.js 18.17 or newer and git, and
@@ -132,10 +139,10 @@ again and ticks it. Work outside any repository is one more box.
 ## What a row holds
 
 One row per session, day, repository and branch: the tool, a hash of the session id, the day and the first and last
-moment, the repository and branch and whether the branch is pushed, active minutes, prompts, stops, rejected actions,
-commands, file edits, lines added and removed, connector calls by name, skills, helper agents, commits and pushed
-commits, and per model its replies and tokens. `npx @ai-adoption-score/ai-coding-usage@1 preview --json` prints the exact rows this Mac
-would send.
+moment, the repository and branch and whether the branch is pushed, active minutes and the same time by hour, prompts,
+stops, rejected actions, commands, file edits, lines added and removed, connector calls by name, skills, helper agents,
+commits and pushed commits, and per model its replies and tokens. `npx @ai-adoption-score/ai-coding-usage@latest
+preview --json` prints the exact rows this Mac would send.
 
 Never shared: prompts, AI answers, code, file names and paths, command text, session titles.
 
@@ -155,3 +162,7 @@ Never shared: prompts, AI answers, code, file names and paths, command text, ses
   lines as added. A failed or turned-down edit, or a scratch file elsewhere, doesn't count.
 - Active minutes add up the gaps under five minutes. A commit counts for the session whose window holds it, from its
   first moment to an hour after its last; each commit counts once.
+- Time by hour (`minutesByHour`, from 1.1) is the same active time cut at the hours (UTC). A minute when several
+  sessions were active at once is split between them, so a person's rows add up to the time they really spent: on one
+  Mac with sessions side by side, 30 days of active minutes came to 185 hours and their time by hour to the 92 really
+  spent. Only the rows that are shared take part, so a session that stays on the Mac takes no share.

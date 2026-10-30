@@ -11,6 +11,7 @@ import { runHook } from './hook.mjs'
 import { hookState, installAll, uninstallAll } from './install.mjs'
 import { paths } from './paths.mjs'
 import { daysToRead, scanUsage } from './scan.mjs'
+import { timeByHour } from './rows.mjs'
 import { readState } from './state.mjs'
 import { describeChoice, repositoryList } from './choice.mjs'
 import { formatSummary } from './summary.mjs'
@@ -29,8 +30,9 @@ Usage
   connect     Link this Mac to your survey with the code from your survey page. It adds a hook to Claude Code and
               Codex and an automatic ping-back, and sends the names of the repositories you used in the last 30 days, so
               you can choose on your survey page which to share. Then it shares the last 30 days of those, and after
-              that, after each session. Run it again to change your choice.
-  status      Show which survey this Mac shares with, what you chose, its hooks, and when it last shared.
+              that, after each session. Run it again to change your choice. Once a day the ping-back looks for a
+              newer version of the add-on and puts it in place.
+  status      Show which survey this Mac shares with, what you chose, its hooks, when it last shared, and its version.
   sync        Share now, instead of after the next session.
   disconnect  Stop sharing from this Mac: removes the hooks, the ping-back and the add-on's settings.
   preview     Count this Mac's last 30 days and show what would be shared. Nothing is sent.
@@ -108,7 +110,7 @@ async function connect(args) {
     else if (!code) code = args[index]
     else return fail(`Unknown option "${args[index]}".`)
   }
-  if (!code) return fail('Add the code from your survey page: npx @ai-adoption-score/ai-coding-usage@1 connect K7Q2-9M4X')
+  if (!code) return fail('Add the code from your survey page: npx @ai-adoption-score/ai-coding-usage@latest connect K7Q2-9M4X')
   const problem = serverProblem(server)
   if (problem) return fail(problem)
   // Run again on a Mac that is connected: the same server carries the link on with the new token, so it doesn't
@@ -226,6 +228,7 @@ async function status() {
   say(`Codex hook: ${hookState('codex')}${state.hookRuns.codex ? `, last ran ${state.hookRuns.codex}` : ''}`)
   say(state.lastSyncAt ? `Last shared: ${state.lastSyncAt}.` : 'Nothing shared yet.')
   if (state.lastCheckInAt) say(`Last ping-back: ${state.lastCheckInAt}.`)
+  say(`Add-on ${CLIENT_VERSION}; it looks for a newer version once a day${state.lastUpdateCheckAt ? `, last on ${state.lastUpdateCheckAt}` : ''}.`)
   if (state.lastError) say(`Last problem: ${state.lastError}`)
   return 0
 }
@@ -265,6 +268,6 @@ async function preview(rest) {
   }
   if (process.platform !== 'darwin') return fail('AI Coding Usage works on a Mac for now. Nothing was read.')
   const scan = await scanUsage({ days })
-  process.stdout.write(json ? `${JSON.stringify({ since: scan.since, until: scan.until, rows: scan.rows }, null, 2)}\n` : `${formatSummary(scan, { companyAccounts })}\n`)
+  process.stdout.write(json ? `${JSON.stringify({ since: scan.since, until: scan.until, rows: timeByHour(scan.rows) }, null, 2)}\n` : `${formatSummary(scan, { companyAccounts })}\n`)
   return 0
 }

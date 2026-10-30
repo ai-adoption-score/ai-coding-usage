@@ -5,13 +5,14 @@ import { paths } from './paths.mjs'
 
 /**
  * What the add-on remembers between runs, beside its settings: which rows the server accepted (by a hash of each), when
- * it last synced, when each tool's hook last ran, and how long the server asked it to wait. Only names and numbers.
+ * it last synced, when each tool's hook last ran, how long the server asked it to wait, and when it last looked for a
+ * newer version. Only names and numbers.
  *
  * @typedef {{
  *   sent: Record<string, string>,
  *   lastSyncStartedAt?: string, lastSyncAt?: string, notBefore?: string,
  *   hookRuns: Partial<Record<'claude-code' | 'codex', string>>,
- *   lastCheckInAt?: string, lastError?: string
+ *   lastCheckInAt?: string, lastError?: string, lastUpdateCheckAt?: string
  * }} UsageState
  */
 

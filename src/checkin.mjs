@@ -8,11 +8,12 @@ import { log } from './log.mjs'
 import { paths } from './paths.mjs'
 import { localDay } from './rows.mjs'
 import { readState, updateState } from './state.mjs'
+import { updateIfDue } from './update.mjs'
 
 /**
  * The hourly check-in (a launchd agent): tells the survey this Mac is there, and whether each tool's hook is still in
  * place and running. It sends no usage numbers. A day with a check-in and no use is a real zero in the report; a day
- * without one is a gap.
+ * without one is a gap. Once a day it also looks for a newer add-on (update.mjs).
  */
 
 const NOT_APPROVED_GRACE_MS = 15 * 60_000
@@ -91,6 +92,12 @@ export async function runCheckIn(env = process.env) {
     log(`check-in: ${response.status} ${status ?? ''} claude=${checkIn.claudeHook} codex=${checkIn.codexHook}`, env)
   } catch (error) {
     log(`check-in failed: ${error instanceof Error ? error.message : String(error)}`, env)
+    return 0
+  }
+  try {
+    await updateIfDue(env)
+  } catch (error) {
+    log(`update failed: ${error instanceof Error ? error.message : String(error)}`, env)
   }
   return 0
 }

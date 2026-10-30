@@ -9,7 +9,7 @@ import { isCurrentConfig, writeConfig } from './config.mjs'
 import { hookState, uninstallAll } from './install.mjs'
 import { log } from './log.mjs'
 import { paths } from './paths.mjs'
-import { localDay } from './rows.mjs'
+import { localDay, timeByHour } from './rows.mjs'
 import { scanUsage } from './scan.mjs'
 import { readState, updateState } from './state.mjs'
 
@@ -137,7 +137,8 @@ export async function syncNow(config, { background = false, reason = 'manual', e
     const { choice } = asked
 
     const scan = await scanUsage({ days: config.historyDays, env })
-    const included = scan.rows.filter((row) => sendsTool(row.tool, config, state, env) && isShared(choice, row.repository))
+    // Time by hour among the rows that go out only, so a session that stays on the Mac takes no share of it.
+    const included = timeByHour(scan.rows.filter((row) => sendsTool(row.tool, config, state, env) && isShared(choice, row.repository)))
     const changed = included.filter((row) => state.sent[rowKey(row)] !== rowHash(row))
     const checkIn = {
       day: localDay(Date.now()),

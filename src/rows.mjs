@@ -12,7 +12,8 @@ import { createHash } from 'node:crypto'
  *   repository: string | null, branch: string | null, branchPushed: boolean, activeMinutes: number,
  *   prompts: number, interrupts: number, rejectedActions: number, commands: number, fileEdits: number,
  *   linesAdded: number, linesRemoved: number, connectors: Record<string, number>, skills: number,
- *   helperAgents: number, commits: number, commitsPushed: number, models: Record<string, ModelTokens>
+ *   helperAgents: number, commits: number, commitsPushed: number, models: Record<string, ModelTokens>,
+ *   minutesByHour?: Record<string, number>
  * }} UsageRow
  *
  * What a row collects before it is finished; `gitTop` and `times` never leave the Mac.
@@ -111,6 +112,57 @@ export function changedLines(before, after) {
   return { added: newEnd - start, removed: oldEnd - start }
 }
 
+/** Each finished row's moments, kept here so they never leave the Mac: `timeByHour` needs them. */
+const momentsOf = new WeakMap()
+const HOUR_MS = 3_600_000
+
+/**
+ * Time with AI by hour (owner, 2026-10-30): each row's active stretches, the gaps under five minutes between its
+ * moments, cut at the hours (UTC, `YYYY-MM-DDTHH`), with a stretch when several of `rows` were active at once shared
+ * evenly between them. So the rows of a day add up to the time the person really spent with AI, however many sessions
+ * ran side by side, where active minutes count each session's own. Only the rows given take part, so a session that
+ * isn't shared changes nothing in the ones that are.
+ * @param {UsageRow[]} rows @returns {UsageRow[]}
+ */
+export function timeByHour(rows) {
+  /** @type {Array<[number, number, number]>} */
+  const points = []
+  rows.forEach((row, index) => {
+    const times = momentsOf.get(row) ?? []
+    for (let at = 1; at < times.length; at += 1) {
+      if (times[at] > times[at - 1] && times[at] - times[at - 1] < ACTIVE_GAP_MS) points.push([times[at - 1], 1, index], [times[at], -1, index])
+    }
+  })
+  // At the same moment, a stretch ends before the next begins.
+  points.sort((left, right) => left[0] - right[0] || left[1] - right[1])
+  /** @type {Map<string, number>[]} */
+  const shares = rows.map(() => new Map())
+  /** @type {Map<number, number>} the rows active now, and how many of their stretches */
+  const open = new Map()
+  let previous = 0
+  for (const [time, step, index] of points) {
+    for (let from = previous; open.size > 0 && from < time; ) {
+      const to = Math.min((Math.floor(from / HOUR_MS) + 1) * HOUR_MS, time)
+      const hour = new Date(from).toISOString().slice(0, 13)
+      for (const active of open.keys()) shares[active].set(hour, (shares[active].get(hour) ?? 0) + (to - from) / open.size)
+      from = to
+    }
+    const count = (open.get(index) ?? 0) + step
+    if (count > 0) open.set(index, count)
+    else open.delete(index)
+    previous = time
+  }
+  return rows.map((row, index) => {
+    /** @type {Record<string, number>} */
+    const minutesByHour = {}
+    for (const [hour, ms] of shares[index]) {
+      const minutes = Math.round(ms / 6_000) / 10
+      if (minutes > 0) minutesByHour[hour] = minutes
+    }
+    return { ...row, minutesByHour }
+  })
+}
+
 /** Working time: the gaps between a row's moments that are shorter than five minutes, added up. */
 function activeMinutes(times) {
   if (times.length === 0) return 0
@@ -130,7 +182,7 @@ function activeMinutes(times) {
 export function finishRow(draft, isPushed) {
   const times = [...draft.times].sort((left, right) => left - right)
   const { sessionId, gitTop, times: _times, ...rest } = draft
-  return {
+  const row = {
     ...rest,
     sessionKey: createHash('sha256').update(`${draft.tool}:${sessionId}`).digest('hex').slice(0, 32),
     firstEventAt: new Date(times[0]).toISOString(),
@@ -138,6 +190,8 @@ export function finishRow(draft, isPushed) {
     branchPushed: isPushed(gitTop, draft.branch),
     activeMinutes: activeMinutes(times),
   }
+  momentsOf.set(row, times)
+  return row
 }
 
 /** Whether a row has anything worth sending: a reply from the AI or a prompt from the person. */
